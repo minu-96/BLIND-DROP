@@ -147,37 +147,75 @@ public class CaveGenerator : MonoBehaviour
     }
 
     private void EnsurePath()
+{
+    // 입구: 상단에서 아래로 내려오면서 첫 번째 바닥 타일 찾기
+    entrancePos = FindFloorFromTop();
+
+    // 출구: 하단에서 위로 올라오면서 첫 번째 바닥 타일 찾기
+    exitPos = FindFloorFromBottom();
+
+    // 입구~출구 사이 강제 통로 뚫기
+    CarvePath(entrancePos, exitPos);
+
+    // 입구/출구 주변 2x2 공간 확보 (플레이어가 끼지 않도록)
+    ClearArea(entrancePos);
+    ClearArea(exitPos);
+
+    Debug.Log($"[Cave] 입구: {entrancePos}, 출구: {exitPos}");
+}
+
+private Vector2Int FindFloorFromTop()
+{
+    // 상단 행부터 아래로 내려오면서 바닥 타일 탐색
+    for (int y = currentHeight - 2; y >= currentHeight / 2; y--)
     {
-        // 입구: 상단 중앙 근처에서 바닥 타일 찾기
-        entrancePos = FindFloorNear(currentWidth / 2, currentHeight - 2);
-
-        // 출구: 하단 중앙 근처에서 바닥 타일 찾기
-        exitPos = FindFloorNear(currentWidth / 2, 1);
-
-        // 입구~출구 사이 강제 통로 뚫기 (경로 보장)
-        CarvePath(entrancePos, exitPos);
-    }
-
-    private Vector2Int FindFloorNear(int startX, int startY)
-    {
-        // 시작 지점 근처에서 가장 가까운 바닥 타일 탐색
-        // 반경을 넓혀가며 바닥 타일 찾기
-        for (int radius = 0; radius < currentWidth; radius++)
+        for (int x = 1; x < currentWidth - 1; x++)
         {
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                int x = Mathf.Clamp(startX + dx, 1, currentWidth - 2);
-                int y = Mathf.Clamp(startY, 1, currentHeight - 2);
-
-                if (!map[x, y]) // 바닥이면
-                    return new Vector2Int(x, y);
-            }
+            if (!map[x, y])
+                return new Vector2Int(x, y);
         }
-
-        // 바닥을 못 찾으면 강제로 바닥 생성
-        map[startX, startY] = false;
-        return new Vector2Int(startX, startY);
     }
+
+    // 못 찾으면 중앙 상단 강제 생성
+    int cx = currentWidth / 2;
+    int cy = currentHeight - 2;
+    map[cx, cy] = false;
+    return new Vector2Int(cx, cy);
+}
+
+private Vector2Int FindFloorFromBottom()
+{
+    // 하단 행부터 위로 올라오면서 바닥 타일 탐색
+    for (int y = 1; y <= currentHeight / 2; y++)
+    {
+        for (int x = 1; x < currentWidth - 1; x++)
+        {
+            if (!map[x, y])
+                return new Vector2Int(x, y);
+        }
+    }
+
+    // 못 찾으면 중앙 하단 강제 생성
+    int cx = currentWidth / 2;
+    int cy = 1;
+    map[cx, cy] = false;
+    return new Vector2Int(cx, cy);
+}
+
+private void ClearArea(Vector2Int center)
+{
+    // 중심 주변 2x2 영역을 바닥으로 만들어서 공간 확보
+    for (int dx = -1; dx <= 1; dx++)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            int x = Mathf.Clamp(center.x + dx, 1, currentWidth - 2);
+            int y = Mathf.Clamp(center.y + dy, 1, currentHeight - 2);
+            map[x, y] = false;
+        }
+    }
+}
+
 
     private void CarvePath(Vector2Int from, Vector2Int to)
     {

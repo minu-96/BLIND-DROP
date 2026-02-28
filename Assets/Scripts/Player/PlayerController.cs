@@ -3,6 +3,8 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
+
+
     [Header("이동 설정")]
     [SerializeField] private float tileSize = 1f;      // 한 칸의 크기 (타일 크기와 맞춰야 함)
     [SerializeField] private float moveTime = 0.1f;    // 한 칸 이동에 걸리는 시간
@@ -10,6 +12,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("참조")]
     [SerializeField] private PulseController pulseController;
+    [SerializeField] private CaveGenerator caveGenerator; // 벽 체크용 추가
 
     // 현재 이동 중인지 여부 (이동 중 추가 입력 방지용)
     private bool isMoving = false;
@@ -43,8 +46,6 @@ public class PlayerController : MonoBehaviour
 
     private void HandleMovementInput()
 {
-    // GetKeyDown: 키를 누른 순간 딱 한 프레임만 true
-    // GetAxisRaw와 달리 꾹 눌러도 반복 입력이 안 됨
     Vector2 dir = Vector2.zero;
 
     if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
@@ -56,10 +57,23 @@ public class PlayerController : MonoBehaviour
     else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
         dir = Vector2.right;
 
-    // 방향 입력이 있을 때만 이동 + 파문 판정
     if (dir != Vector2.zero)
     {
+        // 이동할 목표 타일 좌표 계산
         Vector2 targetPos = (Vector2)transform.position + dir * tileSize;
+
+        // 타일 좌표로 변환해서 벽인지 확인
+        int tileX = Mathf.RoundToInt(targetPos.x / tileSize);
+        int tileY = Mathf.RoundToInt(targetPos.y / tileSize);
+
+        // 벽이면 이동 자체를 막음
+        if (caveGenerator.IsWall(tileX, tileY))
+        {
+            Debug.Log("[Player] 벽 - 이동 불가");
+            return;
+        }
+
+        // 벽이 아니면 이동 + 파문 판정
         StartCoroutine(MoveToTile(targetPos));
 
         if (!isPulseTime)
