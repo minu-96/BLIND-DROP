@@ -45,17 +45,21 @@ public class PulseController : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(60f / bpm);
-
             pulseCount++;
+
+            // DarknessLayer에 점멸 효과 요청 (추가된 부분)
+            DarknessLayer darknessLayer = FindFirstObjectByType<DarknessLayer>();
 
             if (pulseCount % 4 == 0)
             {
                 onBigPulse?.Invoke();
+                darknessLayer?.OnPulseFlash(true);
                 Debug.Log($"[Pulse] 큰 박동! ({pulseCount}번째)");
             }
             else
             {
                 onPulse?.Invoke();
+                darknessLayer?.OnPulseFlash(false);
                 Debug.Log($"[Pulse] 일반 맥박 ({pulseCount}번째)");
             }
         }

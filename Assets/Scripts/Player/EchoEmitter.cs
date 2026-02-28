@@ -42,7 +42,6 @@ public class EchoEmitter : MonoBehaviour
 
     private void FireEcho()
     {
-        // 맥박 타이밍 확인 → 퍼펙트 에코 여부 결정
         bool isPerfect = playerController.IsPulseTime();
         float radius = isPerfect ? baseRadius * perfectMultiplier : baseRadius;
 
@@ -51,17 +50,20 @@ public class EchoEmitter : MonoBehaviour
         else
             Debug.Log("[Echo] 일반 에코. 범위: " + radius);
 
-        // 음파 링 생성 (프리팹이 있을 때만)
+        // 음파 링 생성
         if (echoRingPrefab != null)
         {
             GameObject ring = Instantiate(echoRingPrefab, transform.position, Quaternion.identity);
             EchoRing echoRing = ring.GetComponent<EchoRing>();
-
             if (echoRing != null)
                 echoRing.Initialize(radius, expandSpeed, isPerfect);
         }
 
-        // 쿨타임 시작
+        // 어둠 레이어에 조명 효과 요청 (추가된 부분)
+        DarknessLayer darknessLayer = FindFirstObjectByType<DarknessLayer>();
+        if (darknessLayer != null)
+            darknessLayer.OnEchoFired(transform.position, isPerfect);
+
         StartCoroutine(CooldownRoutine());
     }
 
