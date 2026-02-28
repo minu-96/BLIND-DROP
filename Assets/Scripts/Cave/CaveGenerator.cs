@@ -19,6 +19,19 @@ public class CaveGenerator : MonoBehaviour
     [Header("타일 크기")]
     [SerializeField] private float tileSize = 1f; // 한 타일의 유니티 단위 크기
 
+    [Header("적 프리팹")]
+    [SerializeField] private GameObject wandererPrefab;   // 배회자 프리팹
+    [SerializeField] private GameObject chaserPrefab;     // 추적자 프리팹
+    [SerializeField] private GameObject ambusherPrefab;   // 매복자 프리팹
+    [SerializeField] private GameObject reflectorPrefab;  // 반사체 프리팹
+
+    [Header("파편 프리팹")]
+    [SerializeField] private GameObject fragmentPrefab;   // 파편 프리팹
+
+    [Header("적 배치 설정")]
+    [SerializeField] private int baseEnemyCount = 3;      // 기본 적 수 (1층 기준)
+    [SerializeField] private float fragmentSpawnChance = 0.25f; // 파편 생성 확률 25%
+
     // 현재 맵 크기 (층수에 따라 변함)
     private int currentWidth;
     private int currentHeight;
@@ -55,6 +68,12 @@ public class CaveGenerator : MonoBehaviour
 
         // 6. 타일 오브젝트 생성
         SpawnTiles();
+
+        // 7. 적 배치 (추가)
+        SpawnEntities(floorNumber);
+
+        // 8. 파편 배치 (추가)
+        SpawnFragments();
     }
 
     private void ClearMap()
@@ -147,74 +166,74 @@ public class CaveGenerator : MonoBehaviour
     }
 
     private void EnsurePath()
-{
-    // 입구: 상단에서 아래로 내려오면서 첫 번째 바닥 타일 찾기
-    entrancePos = FindFloorFromTop();
-
-    // 출구: 하단에서 위로 올라오면서 첫 번째 바닥 타일 찾기
-    exitPos = FindFloorFromBottom();
-
-    // 입구~출구 사이 강제 통로 뚫기
-    CarvePath(entrancePos, exitPos);
-
-    // 입구/출구 주변 2x2 공간 확보 (플레이어가 끼지 않도록)
-    ClearArea(entrancePos);
-    ClearArea(exitPos);
-
-    Debug.Log($"[Cave] 입구: {entrancePos}, 출구: {exitPos}");
-}
-
-private Vector2Int FindFloorFromTop()
-{
-    // 상단 행부터 아래로 내려오면서 바닥 타일 탐색
-    for (int y = currentHeight - 2; y >= currentHeight / 2; y--)
     {
-        for (int x = 1; x < currentWidth - 1; x++)
-        {
-            if (!map[x, y])
-                return new Vector2Int(x, y);
-        }
+        // 입구: 상단에서 아래로 내려오면서 첫 번째 바닥 타일 찾기
+        entrancePos = FindFloorFromTop();
+
+        // 출구: 하단에서 위로 올라오면서 첫 번째 바닥 타일 찾기
+        exitPos = FindFloorFromBottom();
+
+        // 입구~출구 사이 강제 통로 뚫기
+        CarvePath(entrancePos, exitPos);
+
+        // 입구/출구 주변 2x2 공간 확보 (플레이어가 끼지 않도록)
+        ClearArea(entrancePos);
+        ClearArea(exitPos);
+
+        Debug.Log($"[Cave] 입구: {entrancePos}, 출구: {exitPos}");
     }
 
-    // 못 찾으면 중앙 상단 강제 생성
-    int cx = currentWidth / 2;
-    int cy = currentHeight - 2;
-    map[cx, cy] = false;
-    return new Vector2Int(cx, cy);
-}
-
-private Vector2Int FindFloorFromBottom()
-{
-    // 하단 행부터 위로 올라오면서 바닥 타일 탐색
-    for (int y = 1; y <= currentHeight / 2; y++)
+    private Vector2Int FindFloorFromTop()
     {
-        for (int x = 1; x < currentWidth - 1; x++)
+        // 상단 행부터 아래로 내려오면서 바닥 타일 탐색
+        for (int y = currentHeight - 2; y >= currentHeight / 2; y--)
         {
-            if (!map[x, y])
-                return new Vector2Int(x, y);
+            for (int x = 1; x < currentWidth - 1; x++)
+            {
+                if (!map[x, y])
+                    return new Vector2Int(x, y);
+            }
         }
+
+        // 못 찾으면 중앙 상단 강제 생성
+        int cx = currentWidth / 2;
+        int cy = currentHeight - 2;
+        map[cx, cy] = false;
+        return new Vector2Int(cx, cy);
     }
 
-    // 못 찾으면 중앙 하단 강제 생성
-    int cx = currentWidth / 2;
-    int cy = 1;
-    map[cx, cy] = false;
-    return new Vector2Int(cx, cy);
-}
-
-private void ClearArea(Vector2Int center)
-{
-    // 중심 주변 2x2 영역을 바닥으로 만들어서 공간 확보
-    for (int dx = -1; dx <= 1; dx++)
+    private Vector2Int FindFloorFromBottom()
     {
-        for (int dy = -1; dy <= 1; dy++)
+        // 하단 행부터 위로 올라오면서 바닥 타일 탐색
+        for (int y = 1; y <= currentHeight / 2; y++)
         {
-            int x = Mathf.Clamp(center.x + dx, 1, currentWidth - 2);
-            int y = Mathf.Clamp(center.y + dy, 1, currentHeight - 2);
-            map[x, y] = false;
+            for (int x = 1; x < currentWidth - 1; x++)
+            {
+                if (!map[x, y])
+                    return new Vector2Int(x, y);
+            }
+        }
+
+        // 못 찾으면 중앙 하단 강제 생성
+        int cx = currentWidth / 2;
+        int cy = 1;
+        map[cx, cy] = false;
+        return new Vector2Int(cx, cy);
+    }
+
+    private void ClearArea(Vector2Int center)
+    {
+        // 중심 주변 2x2 영역을 바닥으로 만들어서 공간 확보
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                int x = Mathf.Clamp(center.x + dx, 1, currentWidth - 2);
+                int y = Mathf.Clamp(center.y + dy, 1, currentHeight - 2);
+                map[x, y] = false;
+            }
         }
     }
-}
 
 
     private void CarvePath(Vector2Int from, Vector2Int to)
@@ -294,4 +313,128 @@ private void ClearArea(Vector2Int center)
     {
         return new Vector3(tilePos.x * tileSize, tilePos.y * tileSize, 0);
     }
+
+    private void SpawnEntities(int floorNumber)
+    {
+        // 층수가 높을수록 적 수 증가 (3 + 층수/5)
+        int enemyCount = baseEnemyCount + (floorNumber / 5);
+
+        for (int i = 0; i < enemyCount; i++)
+        {
+            // 층수에 따라 등장 가능한 적 유형 결정
+            GameObject prefab = GetRandomEntityPrefab(floorNumber);
+            if (prefab == null) continue;
+
+            // 플레이어 입구에서 멀리 떨어진 바닥 타일에 배치
+            Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
+            if (spawnTile == Vector2Int.zero) continue;
+
+            Vector3 spawnPos = TileToWorld(spawnTile);
+            GameObject entity = Instantiate(prefab, spawnPos, Quaternion.identity);
+            spawnedTiles.Add(entity); // 층 이동 시 같이 삭제되도록 목록에 추가
+        }
+
+        Debug.Log($"[Cave] {enemyCount}마리 적 배치 완료");
+    }
+
+    private GameObject GetRandomEntityPrefab(int floorNumber)
+    {
+        // 층수에 따라 등장 가능한 적 풀 구성
+        // 높은 층일수록 더 많은 종류의 적이 등장
+        System.Collections.Generic.List<GameObject> pool =
+            new System.Collections.Generic.List<GameObject>();
+
+        // 1층부터: 배회자
+        if (wandererPrefab != null)
+            pool.Add(wandererPrefab);
+
+        // 11층부터: 추적자 추가
+        if (floorNumber >= 11 && chaserPrefab != null)
+            pool.Add(chaserPrefab);
+
+        // 26층부터: 매복자 추가
+        if (floorNumber >= 26 && ambusherPrefab != null)
+            pool.Add(ambusherPrefab);
+
+        // 41층부터: 반사체 추가
+        if (floorNumber >= 41 && reflectorPrefab != null)
+            pool.Add(reflectorPrefab);
+
+        if (pool.Count == 0) return null;
+
+        // 풀에서 랜덤으로 하나 선택
+        return pool[Random.Range(0, pool.Count)];
+    }
+
+    private Vector2Int GetRandomFloorTileFarFromEntrance()
+    {
+        // 입구에서 최소 5타일 이상 떨어진 바닥 타일 찾기
+        // 최대 30번 시도
+        int minDistance = 5;
+        int maxAttempts = 30;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            int x = Random.Range(1, currentWidth - 1);
+            int y = Random.Range(1, currentHeight - 1);
+
+            // 바닥 타일인지 확인
+            if (map[x, y]) continue;
+
+            // 입구와의 거리 확인 (맨해튼 거리)
+            int distance = Mathf.Abs(x - entrancePos.x) +
+                        Mathf.Abs(y - entrancePos.y);
+
+            if (distance >= minDistance)
+                return new Vector2Int(x, y);
+        }
+
+        // 30번 시도 실패 시 빈 벡터 반환 (배치 스킵)
+        return Vector2Int.zero;
+    }
+
+    private void SpawnFragments()
+    {
+        // 25% 확률로 파편 1개 생성
+        if (Random.value > fragmentSpawnChance) return;
+        if (fragmentPrefab == null) return;
+
+        // 막다른 곳 또는 랜덤 바닥 타일에 배치
+        Vector2Int spawnTile = GetDeadEndTile();
+        if (spawnTile == Vector2Int.zero)
+            spawnTile = GetRandomFloorTileFarFromEntrance();
+        if (spawnTile == Vector2Int.zero) return;
+
+        Vector3 spawnPos = TileToWorld(spawnTile);
+        GameObject fragment = Instantiate(fragmentPrefab, spawnPos, Quaternion.identity);
+        spawnedTiles.Add(fragment);
+
+        Debug.Log($"[Cave] 파편 배치: {spawnTile}");
+    }
+
+    private Vector2Int GetDeadEndTile()
+    {
+        // 막다른 곳 = 주변 3방향이 벽인 바닥 타일
+        for (int x = 1; x < currentWidth - 1; x++)
+        {
+            for (int y = 1; y < currentHeight - 1; y++)
+            {
+                if (map[x, y]) continue; // 벽이면 스킵
+
+                // 4방향 중 벽 개수 세기
+                int wallCount = 0;
+                if (map[x + 1, y]) wallCount++;
+                if (map[x - 1, y]) wallCount++;
+                if (map[x, y + 1]) wallCount++;
+                if (map[x, y - 1]) wallCount++;
+
+                // 3방향이 막혀있으면 막다른 곳
+                if (wallCount >= 3)
+                    return new Vector2Int(x, y);
+            }
+        }
+
+        return Vector2Int.zero;
+    }
+
 }
