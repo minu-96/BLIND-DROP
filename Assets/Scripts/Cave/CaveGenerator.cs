@@ -361,35 +361,35 @@ public class CaveGenerator : MonoBehaviour
             pool.Add(reflectorPrefab);
 
         if (pool.Count == 0) return null;
-
+    
         // 풀에서 랜덤으로 하나 선택
         return pool[Random.Range(0, pool.Count)];
     }
 
     private Vector2Int GetRandomFloorTileFarFromEntrance()
     {
-        // 입구에서 최소 5타일 이상 떨어진 바닥 타일 찾기
-        // 최대 30번 시도
-        int minDistance = 5;
+        // 시도 횟수와 거리를 단계적으로 줄여가며 찾기
+        int[] distances = { 5, 3, 1 };  // 거리 조건을 점점 완화
         int maxAttempts = 30;
 
-        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        foreach (int minDistance in distances)
         {
-            int x = Random.Range(1, currentWidth - 1);
-            int y = Random.Range(1, currentHeight - 1);
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                int x = Random.Range(1, currentWidth - 1);
+                int y = Random.Range(1, currentHeight - 1);
 
-            // 바닥 타일인지 확인
-            if (map[x, y]) continue;
+                if (map[x, y]) continue;
 
-            // 입구와의 거리 확인 (맨해튼 거리)
-            int distance = Mathf.Abs(x - entrancePos.x) +
-                        Mathf.Abs(y - entrancePos.y);
+                int distance = Mathf.Abs(x - entrancePos.x) +
+                            Mathf.Abs(y - entrancePos.y);
 
-            if (distance >= minDistance)
-                return new Vector2Int(x, y);
+                if (distance >= minDistance)
+                    return new Vector2Int(x, y);
+            }
         }
 
-        // 30번 시도 실패 시 빈 벡터 반환 (배치 스킵)
+        Debug.Log("[Cave] 적 배치 위치 완전 실패");
         return Vector2Int.zero;
     }
 

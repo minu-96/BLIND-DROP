@@ -7,6 +7,9 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private HealthDisplay healthDisplay;
     [SerializeField] private EchoCooldownDisplay echoCooldownDisplay;
 
+    [Header("주간 동굴 배지")]
+    [SerializeField] private GameObject weeklyBadge; // WEEKLY 배지 오브젝트
+
     private GameManager gameManager;
     private HealthManager healthManager;
     private EchoEmitter echoEmitter;
@@ -18,9 +21,12 @@ public class HUDManager : MonoBehaviour
         echoEmitter   = FindFirstObjectByType<EchoEmitter>();
 
         // 체력 변경 이벤트 구독
-        // onHealthChanged는 Action (인자 없음) 이므로 맞춰서 연결
         if (healthManager != null)
             healthManager.onHealthChanged += OnHealthChanged;
+
+        // 주간 동굴 모드일 때만 WEEKLY 배지 표시
+        if (weeklyBadge != null)
+            weeklyBadge.SetActive(gameManager != null && gameManager.isWeeklyCave);
 
         // 시작 시 현재 상태로 초기화
         RefreshAll();
@@ -45,7 +51,7 @@ public class HUDManager : MonoBehaviour
         depthDisplay?.UpdateDepth(currentFloor, bestFloor);
     }
 
-    // 체력 변경 시 HealthManager 이벤트로 자동 호출 (인자 없음)
+    // 체력 변경 시 HealthManager 이벤트로 자동 호출
     private void OnHealthChanged()
     {
         if (healthManager == null) return;
@@ -56,7 +62,6 @@ public class HUDManager : MonoBehaviour
     {
         if (gameManager != null)
             depthDisplay?.UpdateDepth(gameManager.currentFloor, gameManager.bestFloor);
-
         if (healthManager != null)
             healthDisplay?.UpdateHealth(healthManager.baseHealth, healthManager.bonusHealth);
     }

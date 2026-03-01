@@ -54,15 +54,16 @@ public class HealthManager : MonoBehaviour
         // 기본 체력이 0이 되면 보너스 체력 소모
         for (int i = 0; i < amount; i++)
         {
-            if (baseHealth > 0)
-            {
-                baseHealth--;
-                Debug.Log($"[Health] 피해! 기본 체력: {baseHealth}, 보너스: {bonusHealth}");
-            }
-            else if (bonusHealth > 0)
+            
+            if (bonusHealth > 0)
             {
                 bonusHealth--;
                 Debug.Log($"[Health] 피해! 보너스 체력: {bonusHealth}");
+            }
+            else if (baseHealth > 0)
+            {
+                baseHealth--;
+                Debug.Log($"[Health] 피해! 기본 체력: {baseHealth}, 보너스: {bonusHealth}");
             }
 
             if (totalHealth <= 0)

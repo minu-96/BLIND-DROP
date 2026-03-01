@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private Transform playerTransform;
     [SerializeField] private HUDManager hudManager;
     [SerializeField] private FloorTransition floorTransition;  // 추가
+    [Header("주간 동굴")]
+    public bool isWeeklyCave { get; private set; } = false;  // 주간 동굴 모드 여부
 
     [Header("게임 상태")]
     public int currentFloor { get; private set; } = 1;
@@ -58,13 +60,30 @@ public class GameManager : MonoBehaviour
     {
         currentFloor = 1;
         isGameOver = false;
-        currentSeed = Random.Range(0, int.MaxValue);
-        healthManager.ResetHealth();
 
-        // 1층은 페이드 없이 바로 로드
+        // PlayerPrefs에서 주간 동굴 모드 여부 읽기
+        isWeeklyCave = PlayerPrefs.GetInt("IsWeeklyCave", 0) == 1;
+
+        if (isWeeklyCave)
+        {
+            // 이번 주 월요일의 날짜값을 시드로 사용 (GDD 7.2 기준)
+            // 예: 2026-03-02(월) → "20260302" → GetHashCode()
+            System.DateTime today = System.DateTime.Now;
+            // 이번 주 월요일 계산 (DayOfWeek.Monday = 1)
+            int daysFromMonday = ((int)today.DayOfWeek - (int)System.DayOfWeek.Monday + 7) % 7;
+            System.DateTime thisMonday = today.AddDays(-daysFromMonday).Date;
+            currentSeed = thisMonday.ToString("yyyyMMdd").GetHashCode();
+            Debug.Log($"[GameManager] 주간 동굴 시드: {currentSeed} ({thisMonday:yyyy-MM-dd})");
+        }
+        else
+        {
+            // 일반 플레이: 매번 랜덤 시드
+            currentSeed = Random.Range(0, int.MaxValue);
+        }
+
+        healthManager.ResetHealth();
         LoadFloorImmediate(currentFloor);
     }
-
     public void OnPlayerReachedExit()
     {
         currentFloor++;
@@ -121,7 +140,13 @@ public class GameManager : MonoBehaviour
             hudManager?.OnFloorChanged(currentFloor, bestFloor);
         }
 
+        // 주간 동굴 모드일 때 주간 기록도 별도 저장
+        if (isWeeklyCave && WeeklyCaveManager.Instance != null)
+            WeeklyCaveManager.Instance.TryUpdateWeeklyRecord(currentFloor);
+
         PlayerPrefs.SetInt("LastDepth", currentFloor);
+        // 주간 동굴 여부를 Result 씬에 전달
+        PlayerPrefs.SetInt("LastIsWeekly", isWeeklyCave ? 1 : 0);
         PlayerPrefs.Save();
 
         Debug.Log($"[GameManager] 게임 오버 - 도달 층수: {currentFloor}층");

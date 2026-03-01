@@ -25,46 +25,60 @@ public class DarknessLayer : MonoBehaviour
     }
 
     private IEnumerator SpawnEchoLight(Vector2 position, float radius, bool isPerfect)
+{
+    // 조명 오브젝트 생성
+    GameObject lightObj = Instantiate(echoLightPrefab,
+        new Vector3(position.x, position.y, 0), Quaternion.identity);
+    Light2D light = lightObj.GetComponent<Light2D>();
+
+    if (light == null)
     {
-        // 조명 오브젝트 생성
-        GameObject lightObj = Instantiate(echoLightPrefab,
-            new Vector3(position.x, position.y, 0), Quaternion.identity);
-
-        Light2D light = lightObj.GetComponent<Light2D>();
-        if (light == null)
-        {
-            Destroy(lightObj);
-            yield break;
-        }
-
-        // 조명 초기 설정
-        light.pointLightOuterRadius = radius;
-        light.intensity = maxLightIntensity;
-
-        // 퍼펙트 에코면 더 밝게
-        if (isPerfect)
-            light.intensity = maxLightIntensity * 1.5f;
-
-        activeLights.Add(light);
-
-        // lightFadeTime 동안 서서히 페이드아웃
-        float elapsed = 0f;
-        float startIntensity = light.intensity;
-
-        while (elapsed < lightFadeTime)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / lightFadeTime;
-
-            // 조명 밝기를 서서히 0으로
-            light.intensity = Mathf.Lerp(startIntensity, 0f, t);
-            yield return null;
-        }
-
-        // 조명 제거
-        activeLights.Remove(light);
         Destroy(lightObj);
+        yield break;
     }
+
+    // 조명 초기 설정
+    light.pointLightOuterRadius = radius;
+    float peakIntensity = isPerfect ? maxLightIntensity * 1.5f : maxLightIntensity;
+    light.intensity = 0f;
+    activeLights.Add(light);
+
+    // --- 1구간: 링 확장 시간만큼 대기 ---
+    float expandTime = 0.625f; // baseRadius(5f) / expandSpeed(8f)
+    yield return new WaitForSeconds(expandTime);
+
+    // --- 2구간: 짧게 페이드인 (빠르게 확 켜짐) ---
+    float fadeInTime = 0.08f; // 매우 짧게
+    float elapsed = 0f;
+
+    while (elapsed < fadeInTime)
+    {
+        elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(elapsed / fadeInTime);
+        light.intensity = Mathf.Lerp(0f, peakIntensity, t);
+        yield return null;
+    }
+
+    light.intensity = peakIntensity;
+
+    // --- 3구간: 길게 페이드아웃 (잔상처럼 천천히 사라짐) ---
+    float fadeOutTime = lightFadeTime * 2f; // 기존보다 2배 길게
+    elapsed = 0f;
+
+    while (elapsed < fadeOutTime)
+    {
+        elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(elapsed / fadeOutTime);
+        // SmoothStep: 처음엔 아주 천천히, 나중엔 빠르게
+        float smoothT = t * t * (3f - 2f * t);
+        light.intensity = Mathf.Lerp(peakIntensity, 0f, smoothT);
+        yield return null;
+    }
+
+    // 조명 제거
+    activeLights.Remove(light);
+    Destroy(lightObj);
+}
 
     // 맥박 점멸 효과 (PulseController 이벤트에서 호출)
     public void OnPulseFlash(bool isBigPulse)
