@@ -56,20 +56,19 @@ public class HealthManager : MonoBehaviour
         {
             if (baseHealth > 0)
             {
-                // 기본 체력 먼저 감소
                 baseHealth--;
                 Debug.Log($"[Health] 피해! 기본 체력: {baseHealth}, 보너스: {bonusHealth}");
             }
             else if (bonusHealth > 0)
             {
-                // 기본 체력이 없으면 보너스 체력 감소
                 bonusHealth--;
                 Debug.Log($"[Health] 피해! 보너스 체력: {bonusHealth}");
             }
 
-            // 총 체력이 0이면 사망
             if (totalHealth <= 0)
             {
+                // HUD 먼저 갱신 (체력 0 표시) 후 게임오버  // 변경
+                onHealthChanged?.Invoke();                  // 추가
                 Debug.Log("[Health] 사망!");
                 onDeath?.Invoke();
                 GameManager.Instance.OnGameOver();
