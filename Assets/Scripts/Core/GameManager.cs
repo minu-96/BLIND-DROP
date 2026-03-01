@@ -1,8 +1,8 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    // 싱글톤: 어디서든 GameManager.Instance로 접근 가능
     public static GameManager Instance { get; private set; }
 
     [Header("참조")]
@@ -12,7 +12,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private PlayerController playerController;
     [SerializeField] private HealthManager healthManager;
     [SerializeField] private Transform playerTransform;
-    [SerializeField] private HUDManager hudManager;             // 추가
+    [SerializeField] private HUDManager hudManager;
+    [SerializeField] private FloorTransition floorTransition;  // 추가
 
     [Header("게임 상태")]
     public int currentFloor { get; private set; } = 1;
@@ -59,10 +60,26 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         currentSeed = Random.Range(0, int.MaxValue);
         healthManager.ResetHealth();
-        LoadFloor(currentFloor);
+
+        // 1층은 페이드 없이 바로 로드
+        LoadFloorImmediate(currentFloor);
     }
 
-    public void LoadFloor(int floor)
+    public void OnPlayerReachedExit()
+    {
+        currentFloor++;
+        Debug.Log($"[GameManager] {currentFloor}층으로 이동");
+
+        // 페이드 연출과 함께 층 이동                           // 추가
+        floorTransition.PlayTransition(                        // 추가
+            currentFloor,                                      // 추가
+            onMidPoint: () => LoadFloorImmediate(currentFloor),// 추가 (검정 화면에서 생성)
+            onComplete: () => playerController.UnlockInput()   // 추가 (페이드 인 후 입력 허용)
+        );                                                     // 추가
+    }
+
+    // 페이드 연출 없이 즉시 로드 (1층 시작 / 페이드 중 호출용)
+    private void LoadFloorImmediate(int floor)
     {
         // 1. 동굴 생성
         caveGenerator.GenerateFloor(floor, currentSeed);
@@ -87,15 +104,8 @@ public class GameManager : MonoBehaviour
             Debug.Log($"[GameManager] {floor}층 - 기본 체력 초기화");
         }
 
-        // 6. HUD 층수 갱신                                      // 추가
-        hudManager?.OnFloorChanged(currentFloor, bestFloor);     // 추가
-    }
-
-    public void OnPlayerReachedExit()
-    {
-        currentFloor++;
-        Debug.Log($"[GameManager] {currentFloor}층으로 이동");
-        LoadFloor(currentFloor);
+        // 6. HUD 층수 갱신
+        hudManager?.OnFloorChanged(currentFloor, bestFloor);
     }
 
     public void OnGameOver()
@@ -108,14 +118,15 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("BestFloor", bestFloor);
             PlayerPrefs.Save();
             Debug.Log($"[GameManager] 최고 기록 갱신! {bestFloor}층");
-
-            // 기록 갱신 시 HUD에도 즉시 반영                    // 추가
-            hudManager?.OnFloorChanged(currentFloor, bestFloor); // 추가
+            hudManager?.OnFloorChanged(currentFloor, bestFloor);
         }
+
+        PlayerPrefs.SetInt("LastDepth", currentFloor);
+        PlayerPrefs.Save();
 
         Debug.Log($"[GameManager] 게임 오버 - 도달 층수: {currentFloor}층");
 
-        // TODO: SceneResult로 전환 (UI 완성 후 연결)
+        SceneManager.LoadScene("SceneResult");
     }
 
     private float GetValueForFloor(

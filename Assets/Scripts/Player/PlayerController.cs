@@ -24,6 +24,8 @@ public class PlayerController : MonoBehaviour
     // 파문 발생 시 외부(EchoEmitter, EntityAI 등)에 알리는 이벤트
     public System.Action onRipple;
 
+    private bool isInputLocked = false;
+
     void Start()
     {
         // PulseController의 맥박 이벤트를 구독
@@ -44,8 +46,20 @@ public class PlayerController : MonoBehaviour
         UpdatePulseWindow();
     }
 
+    public void UnlockInput()
+{
+    isInputLocked = false;
+}
+
+public void LockInput()
+{
+    isInputLocked = true;
+}
+
     private void HandleMovementInput()
 {
+    if (isInputLocked) return;
+
     Vector2 dir = Vector2.zero;
 
     if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
