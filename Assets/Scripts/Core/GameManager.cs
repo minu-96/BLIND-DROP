@@ -5,6 +5,9 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("밝기")]
+    [SerializeField] private UnityEngine.Rendering.Universal.Light2D globalLight2D; // Global Light2D 직접 연결
+
     [Header("참조")]
     [SerializeField] private CaveGenerator caveGenerator;
     [SerializeField] private PulseController pulseController;
@@ -53,7 +56,18 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         bestFloor = PlayerPrefs.GetInt("BestFloor", 0);
+
+        // 저장된 밝기 설정 적용 (씬 전환 후에도 유지되도록)
+        ApplySavedBrightness();
+        
         StartNewGame();
+    }
+
+    private void ApplySavedBrightness()
+    {
+        if (globalLight2D == null) return;
+        float brightness = PlayerPrefs.GetFloat("OptionBrightness", 0.5f);
+        globalLight2D.intensity = brightness;
     }
 
     public void StartNewGame()
