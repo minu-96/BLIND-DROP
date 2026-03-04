@@ -9,8 +9,11 @@ public class HealthDisplay : MonoBehaviour
 
     // 기본 체력 색상
     private readonly Color activeColor  = new Color(1f, 1f, 1f, 1f);    // 불투명
-    private readonly Color inactiveColor = new Color(1f, 1f, 1f, 0.15f); // 거의 투명
-    private readonly Color bonusColor   = new Color(1f, 1f, 1f, 0.5f);  // 반투명
+    private readonly Color inactiveColor = new Color(1f, 1f, 1f, 0.08f); // 거의 투명
+    private readonly Color bonusColor   = new Color(1f, 1f, 1f, 1f);  // 반투명
+    private readonly Color inbonusColor   = new Color(1f, 1f, 1f, 0f);  // 투명
+
+    private bool isBonus = false;
 
     public void UpdateHealth(int baseHP, int bonusHP)
     {
@@ -22,7 +25,24 @@ public class HealthDisplay : MonoBehaviour
         }
 
         // 보너스 체력 아이콘 갱신
-        if (bonusHPIcon != null)
-            bonusHPIcon.color = bonusHP > 0 ? bonusColor : inactiveColor;
+        if(isBonus == true && bonusHPIcon != null)
+            bonusHPIcon.color = inactiveColor;
+        else if (bonusHPIcon != null)
+        {
+            bonusHPIcon.color = bonusHP > 0 ? bonusColor : inbonusColor;
+            isBonus = false;
+        }
+        
+    }
+
+    public void Bonus()
+    {
+        bonusHPIcon.color = inactiveColor;
+        isBonus = true;
+    }
+
+    public void RealBonus()
+    {
+        isBonus = false;
     }
 }

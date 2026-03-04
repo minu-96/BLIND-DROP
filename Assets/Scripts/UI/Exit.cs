@@ -3,7 +3,7 @@ using UnityEngine;
 public class Exit : MonoBehaviour
 {
     public GameObject exitPanel;
-    public bool onUI;
+
     public void Quit()
     {
         #if UNITY_EDITOR
@@ -23,6 +23,5 @@ public class Exit : MonoBehaviour
     {
         Time.timeScale = 1f;
         exitPanel.SetActive(false);
-        onUI = false;
     }
 }

@@ -63,6 +63,12 @@ public class FragmentManager : MonoBehaviour
             Debug.Log("[Fragment] 파편 2개 달성 - 보너스 체력 추가!");
         }
 
+        if (currentPlayFragments == 1)
+        {
+            healthManager.IsBonusHealth();
+            Debug.Log("[Fragment] 보너스 체력 가시화!");
+        }
+
         // 누적 파편으로 음파 모양 해금 체크
         CheckEchoUnlock();
 

@@ -1,10 +1,11 @@
 using UnityEngine;
-
+using UnityEngine.UI;
 public class HealthManager : MonoBehaviour
 {
     [Header("체력 설정")]
     [SerializeField] private int maxBaseHealth = 2;   // 기본 체력 최대값 (항상 2)
     [SerializeField] private int maxBonusHealth = 1;  // 보너스 체력 최대값 (항상 1)
+    [SerializeField] private HealthDisplay healthDisplay;
 
     // 현재 기본 체력 (5층마다 2로 초기화)
     public int baseHealth { get; private set; }
@@ -93,6 +94,11 @@ public class HealthManager : MonoBehaviour
         {
             Debug.Log("[Health] 보너스 체력 이미 최대");
         }
+        healthDisplay?.RealBonus();
+    }
+    public void IsBonusHealth()
+    {
+        healthDisplay?.Bonus();
     }
 
     // 현재 체력 상태 확인용 (UI에서 사용)

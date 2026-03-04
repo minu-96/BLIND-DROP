@@ -8,14 +8,19 @@ public class PulseController : MonoBehaviour
     [SerializeField] private float bpm = 40f;
 
     [Header("이벤트")]
-    public UnityEvent onPulse;        // 일반 맥박
-    public UnityEvent onBigPulse;     // 큰 박동 (4번째마다)
+    public UnityEvent onPulse;      // 일반 맥박
+    public UnityEvent onBigPulse;   // 큰 박동 (4번째마다)
 
     private int pulseCount = 0;
     private Coroutine pulseCoroutine;
 
+    // DarknessLayer 캐싱 (매 박동마다 FindFirstObjectByType 호출 방지)
+    private DarknessLayer darknessLayer;
+
     void Start()
     {
+        // 한 번만 찾아서 캐싱
+        darknessLayer = FindFirstObjectByType<DarknessLayer>();
         StartPulse();
     }
 
@@ -35,7 +40,7 @@ public class PulseController : MonoBehaviour
     public void SetBPM(float newBPM)
     {
         bpm = newBPM;
-        StartPulse(); // 새 BPM으로 재시작
+        StartPulse();
     }
 
     public float GetInterval() => 60f / bpm;
@@ -46,9 +51,6 @@ public class PulseController : MonoBehaviour
         {
             yield return new WaitForSeconds(60f / bpm);
             pulseCount++;
-
-            // DarknessLayer에 점멸 효과 요청 (추가된 부분)
-            DarknessLayer darknessLayer = FindFirstObjectByType<DarknessLayer>();
 
             if (pulseCount % 4 == 0)
             {
