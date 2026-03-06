@@ -34,6 +34,10 @@ public class ResultManager : MonoBehaviour
     [SerializeField] private float bestFlashInterval = 0.4f;
     [SerializeField] private int bestFlashCount = 4;
 
+    // TitlePulseSound 참조 추가
+[Header("사운드 참조")]
+[SerializeField] private TitlePulseSound titlePulseSound;
+
     private Image[] borders;
 
     void Start()
@@ -86,7 +90,9 @@ public class ResultManager : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(pulseInterval);
+            titlePulseSound?.PlayPulse();
             yield return StartCoroutine(FadeBorder(0f, 1f, fadeInDuration));
+            
             yield return StartCoroutine(FadeBorder(1f, 0f, fadeOutDuration));
         }
     }

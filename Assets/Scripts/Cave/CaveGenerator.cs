@@ -31,6 +31,9 @@ public class CaveGenerator : MonoBehaviour
     [Header("적 배치 설정")]
     [SerializeField] private int baseEnemyCount = 3;      // 기본 적 수 (1층 기준)
     [SerializeField] private float fragmentSpawnChance = 0.25f; // 파편 생성 확률 25%
+    [Header("튜토리얼 설정")]
+[SerializeField] public bool isTutorialMode = false; // 튜토리얼 전용 플래그
+                                                      // true면 Chaser 1마리만 생성
 
     // 현재 맵 크기 (층수에 따라 변함)
     private int currentWidth;
@@ -315,27 +318,41 @@ public class CaveGenerator : MonoBehaviour
     }
 
     private void SpawnEntities(int floorNumber)
+{
+    // 튜토리얼 모드: Chaser 1마리만 플레이어에서 멀리 배치
+    if (isTutorialMode)
     {
-        // 층수가 높을수록 적 수 증가 (3 + 층수/5)
-        int enemyCount = baseEnemyCount + (floorNumber / 5);
+        if (chaserPrefab == null) return;
 
-        for (int i = 0; i < enemyCount; i++)
-        {
-            // 층수에 따라 등장 가능한 적 유형 결정
-            GameObject prefab = GetRandomEntityPrefab(floorNumber);
-            if (prefab == null) continue;
+        Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
+        if (spawnTile == Vector2Int.zero) return;
 
-            // 플레이어 입구에서 멀리 떨어진 바닥 타일에 배치
-            Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
-            if (spawnTile == Vector2Int.zero) continue;
+        GameObject entity = Instantiate(chaserPrefab,
+            TileToWorld(spawnTile), Quaternion.identity);
+        spawnedTiles.Add(entity);
 
-            Vector3 spawnPos = TileToWorld(spawnTile);
-            GameObject entity = Instantiate(prefab, spawnPos, Quaternion.identity);
-            spawnedTiles.Add(entity); // 층 이동 시 같이 삭제되도록 목록에 추가
-        }
-
-        Debug.Log($"[Cave] {enemyCount}마리 적 배치 완료");
+        Debug.Log("[Cave] 튜토리얼 전용 Chaser 배치");
+        return; // 일반 적 배치 스킵
     }
+
+    // 이하 기존 코드 그대로
+    int enemyCount = baseEnemyCount + (floorNumber / 5);
+
+    for (int i = 0; i < enemyCount; i++)
+    {
+        GameObject prefab = GetRandomEntityPrefab(floorNumber);
+        if (prefab == null) continue;
+
+        Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
+        if (spawnTile == Vector2Int.zero) continue;
+
+        Vector3 spawnPos = TileToWorld(spawnTile);
+        GameObject entity = Instantiate(prefab, spawnPos, Quaternion.identity);
+        spawnedTiles.Add(entity);
+    }
+
+    Debug.Log($"[Cave] {enemyCount}마리 적 배치 완료");
+}
 
     private GameObject GetRandomEntityPrefab(int floorNumber)
     {

@@ -19,6 +19,10 @@ public class TitleAnimator : MonoBehaviour
     [SerializeField] private float fadeInDuration = 0.05f;  // 켜지는 시간 (매우 빠르게)
     [SerializeField] private float fadeOutDuration = 0.6f;  // 꺼지는 시간 (천천히)
 
+
+    // TitlePulseSound 참조 추가
+[Header("사운드 참조")]
+[SerializeField] private TitlePulseSound titlePulseSound;
     private Image[] borders;
 
     void Start()
@@ -28,20 +32,21 @@ public class TitleAnimator : MonoBehaviour
         StartCoroutine(PulseBorderRoutine());
     }
 
-    private IEnumerator PulseBorderRoutine()
+
+// PulseBorderRoutine 수정
+private IEnumerator PulseBorderRoutine()
+{
+    while (true)
     {
-        while (true)
-        {
-            // 다음 박동까지 대기
-            yield return new WaitForSeconds(pulseInterval);
+        yield return new WaitForSeconds(pulseInterval);
 
-            // 빠르게 켜짐
-            yield return StartCoroutine(FadeBorder(0f, 1f, fadeInDuration));
+        // 점멸과 동시에 소리 재생 → 싱크 보장
+        titlePulseSound?.PlayPulse();
 
-            // 천천히 꺼짐 (심장박동 잔향 느낌)
-            yield return StartCoroutine(FadeBorder(1f, 0f, fadeOutDuration));
-        }
+        yield return StartCoroutine(FadeBorder(0f, 1f, fadeInDuration));
+        yield return StartCoroutine(FadeBorder(1f, 0f, fadeOutDuration));
     }
+}
 
     // 테두리 Alpha를 from → to로 부드럽게 전환하는 코루틴
     private IEnumerator FadeBorder(float from, float to, float duration)

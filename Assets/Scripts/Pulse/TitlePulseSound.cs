@@ -34,16 +34,11 @@ void Start()
 {
     // AudioListener.volume 대신 믹서로 관리하므로 볼륨 직접 설정 불필요
     audioSource.volume = 1f;
-    StartCoroutine(PulseLoop());
 }
 
-    private IEnumerator PulseLoop()
+    public void PlayPulse()
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(interval);
             audioSource.Play();
-        }
     }
 
     private AudioClip GenerateHeartbeatClip()
