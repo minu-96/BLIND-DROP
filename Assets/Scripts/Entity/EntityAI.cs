@@ -33,23 +33,20 @@ public class EntityAI : MonoBehaviour
     private float damageCooldownTime = 1.0f;     // 추가
 
     void Start()
-    {
-        pulseController = FindFirstObjectByType<PulseController>();
-        caveGenerator = FindFirstObjectByType<CaveGenerator>();
-        playerTransform = GameObject.FindWithTag("Player").transform;
+{
+    pulseController = FindFirstObjectByType<PulseController>();
+    caveGenerator   = FindFirstObjectByType<CaveGenerator>();
+    playerTransform = GameObject.FindWithTag("Player").transform;
 
-        pulseController.onPulse.AddListener(OnPulse);
-        pulseController.onBigPulse.AddListener(OnPulse);
-    }
+    // onPulse만 구독 (onBigPulse 제거)
+    pulseController.onPulse.AddListener(OnPulse);
+}
 
-    void OnDestroy()
-    {
-        if (pulseController != null)
-        {
-            pulseController.onPulse.RemoveListener(OnPulse);
-            pulseController.onBigPulse.RemoveListener(OnPulse);
-        }
-    }
+void OnDestroy()
+{
+    if (pulseController != null)
+        pulseController.onPulse.RemoveListener(OnPulse);
+}
 
     private void OnPulse()
     {

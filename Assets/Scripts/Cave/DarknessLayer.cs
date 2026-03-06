@@ -81,32 +81,30 @@ public class DarknessLayer : MonoBehaviour
 }
 
     // 맥박 점멸 효과 (PulseController 이벤트에서 호출)
-    public void OnPulseFlash(bool isBigPulse)
+    // 맥박 점멸 효과 (bool 인자 제거)
+// OnPulseFlash 메서드만 교체
+public void OnPulseFlash()
+{
+    StartCoroutine(PulseFlash());
+}
+
+private IEnumerator PulseFlash()
+{
+    float flashIntensity = 0.08f;
+    float flashTime = 0.1f;
+
+    foreach (Light2D light in activeLights)
     {
-        StartCoroutine(PulseFlash(isBigPulse));
+        if (light != null)
+            light.intensity += flashIntensity;
     }
 
-    private IEnumerator PulseFlash(bool isBigPulse)
+    yield return new WaitForSeconds(flashTime);
+
+    foreach (Light2D light in activeLights)
     {
-        // 화면 테두리 점멸은 UI에서 처리할 예정
-        // 여기선 전체 조명 강도를 잠깐 올려주는 효과만
-        float flashIntensity = isBigPulse ? 0.15f : 0.08f;
-        float flashTime = 0.1f;
-
-        // 전체 활성 조명 잠깐 밝게
-        foreach (Light2D light in activeLights)
-        {
-            if (light != null)
-                light.intensity += flashIntensity;
-        }
-
-        yield return new WaitForSeconds(flashTime);
-
-        // 원래대로 복구
-        foreach (Light2D light in activeLights)
-        {
-            if (light != null)
-                light.intensity -= flashIntensity;
-        }
+        if (light != null)
+            light.intensity -= flashIntensity;
     }
+}
 }

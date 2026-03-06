@@ -1,35 +1,40 @@
 // Scripts/UI/OptionsManager.cs
 // 옵션 패널 전체 관리
-// - 사운드 볼륨 슬라이더
-// - 밝기 슬라이더 (Global Light2D Intensity 조정)
+// - BGM / SFX / Pulse 볼륨 슬라이더 (AudioMixer 연동)
+// - 밝기 슬라이더
 // - 해상도 드롭다운
 // - X버튼으로 패널 닫기
-// - PlayerPrefs로 설정값 저장/불러오기
 
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Audio;
 using UnityEngine.Rendering.Universal;
 using TMPro;
 
 public class OptionsManager : MonoBehaviour
 {
     [Header("패널 참조")]
-    [SerializeField] private GameObject optionsPanel;   // 옵션 패널 루트 오브젝트
+    [SerializeField] private GameObject optionsPanel;
+
+    [Header("AudioMixer 참조")]
+    [SerializeField] private AudioMixer mainMixer;      // MainMixer 에셋 연결
 
     [Header("슬라이더 참조")]
-    [SerializeField] private Slider volumeSlider;       // 사운드 볼륨 슬라이더
+    [SerializeField] private Slider bgmSlider;          // 배경음 슬라이더
+    [SerializeField] private Slider sfxSlider;          // 효과음 슬라이더
+    [SerializeField] private Slider pulseSlider;        // 펄스 슬라이더
     [SerializeField] private Slider brightnessSlider;   // 밝기 슬라이더
 
     [Header("드롭다운 참조")]
-    [SerializeField] private TMP_Dropdown resolutionDropdown; // 해상도 드롭다운
+    [SerializeField] private TMP_Dropdown resolutionDropdown;
 
     [Header("버튼 참조")]
-    [SerializeField] private Button closeButton;        // X 버튼
+    [SerializeField] private Button closeButton;
 
     [Header("밝기 설정")]
-    [SerializeField] private Light2D globalLight;       // Global Light2D 참조
-    [SerializeField] private float minBrightness = 0f;  // 밝기 최솟값
-    [SerializeField] private float maxBrightness = 1f;  // 밝기 최댓값
+    [SerializeField] private Light2D globalLight;
+    [SerializeField] private float minBrightness = 0f;
+    [SerializeField] private float maxBrightness = 1f;
 
     // 지원 해상도 목록
     private readonly (int width, int height)[] resolutions =
@@ -43,89 +48,96 @@ public class OptionsManager : MonoBehaviour
     };
 
     // PlayerPrefs 키 상수
-    private const string KEY_VOLUME     = "OptionVolume";
+    private const string KEY_BGM        = "OptionBGM";
+    private const string KEY_SFX        = "OptionSFX";
+    private const string KEY_PULSE      = "OptionPulse";
     private const string KEY_BRIGHTNESS = "OptionBrightness";
     private const string KEY_RESOLUTION = "OptionResolution";
-    private const string KEY_FULLSCREEN = "OptionFullscreen";
 
     void Start()
     {
-        // 시작 시 패널 비활성화
         optionsPanel.SetActive(false);
-
-        // 버튼 이벤트 연결
         closeButton.onClick.AddListener(CloseOptions);
-
-        // 해상도 드롭다운 옵션 구성
         SetupResolutionDropdown();
-
-        // 저장된 설정값 불러와서 UI에 반영
         LoadSettings();
 
-        // 슬라이더/드롭다운 변경 이벤트 연결
-        // (LoadSettings 이후에 연결해야 불러올 때 이벤트가 중복 발생하지 않음)
-        volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
+        // LoadSettings 이후에 이벤트 연결 (중복 발생 방지)
+        bgmSlider.onValueChanged.AddListener(OnBGMChanged);
+        sfxSlider.onValueChanged.AddListener(OnSFXChanged);
+        pulseSlider.onValueChanged.AddListener(OnPulseChanged);
         brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
         resolutionDropdown.onValueChanged.AddListener(OnResolutionChanged);
     }
 
-    // 옵션 패널 열기 (TitleManager에서 호출)
     public void OpenOptions()
     {
         optionsPanel.SetActive(true);
     }
 
-    // X버튼 클릭 시 패널 닫기
     private void CloseOptions()
     {
         optionsPanel.SetActive(false);
     }
 
-    // 해상도 드롭다운 옵션 목록 구성
     private void SetupResolutionDropdown()
     {
         resolutionDropdown.ClearOptions();
-
         var options = new System.Collections.Generic.List<string>();
-
-        // 풀스크린 옵션을 첫 번째로 추가
         options.Add("Fullscreen");
-
-        // 해상도 목록 추가
         foreach (var res in resolutions)
             options.Add($"{res.width} x {res.height}");
-
         resolutionDropdown.AddOptions(options);
     }
 
-    // 저장된 설정 불러오기 + UI 반영 + 실제 적용
     private void LoadSettings()
     {
-        // 볼륨 (기본값 1.0)
-        float volume = PlayerPrefs.GetFloat(KEY_VOLUME, 1f);
-        volumeSlider.value = volume;
-        ApplyVolume(volume);
+        // BGM 볼륨 (기본값 0.8)
+        float bgm = PlayerPrefs.GetFloat(KEY_BGM, 0.8f);
+        bgmSlider.value = bgm;
+        ApplyMixerVolume("BGMVolume", bgm);
 
-        // 밝기 (기본값 0.5)
+        // SFX 볼륨 (기본값 1.0)
+        float sfx = PlayerPrefs.GetFloat(KEY_SFX, 1f);
+        sfxSlider.value = sfx;
+        ApplyMixerVolume("SFXVolume", sfx);
+
+        // Pulse 볼륨 (기본값 0.6)
+        float pulse = PlayerPrefs.GetFloat(KEY_PULSE, 0.6f);
+        pulseSlider.value = pulse;
+        ApplyMixerVolume("PulseVolume", pulse);
+
+        // 밝기
         float brightness = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, 0.5f);
         brightnessSlider.value = brightness;
         ApplyBrightness(brightness);
 
-        // 해상도 (기본값 0 = Fullscreen)
+        // 해상도
         int resIndex = PlayerPrefs.GetInt(KEY_RESOLUTION, 0);
         resolutionDropdown.value = resIndex;
         ApplyResolution(resIndex);
     }
 
-    // 볼륨 슬라이더 변경 시
-    private void OnVolumeChanged(float value)
+    private void OnBGMChanged(float value)
     {
-        ApplyVolume(value);
-        PlayerPrefs.SetFloat(KEY_VOLUME, value);
+        ApplyMixerVolume("BGMVolume", value);
+        PlayerPrefs.SetFloat(KEY_BGM, value);
         PlayerPrefs.Save();
     }
 
-    // 밝기 슬라이더 변경 시
+    private void OnSFXChanged(float value)
+    {
+        ApplyMixerVolume("SFXVolume", value);
+        PlayerPrefs.SetFloat(KEY_SFX, value);
+        PlayerPrefs.Save();
+    }
+
+    private void OnPulseChanged(float value)
+    {
+        ApplyMixerVolume("PulseVolume", value);
+        PlayerPrefs.SetFloat(KEY_PULSE, value);
+        PlayerPrefs.Save();
+    }
+
     private void OnBrightnessChanged(float value)
     {
         ApplyBrightness(value);
@@ -133,7 +145,6 @@ public class OptionsManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // 해상도 드롭다운 변경 시
     private void OnResolutionChanged(int index)
     {
         ApplyResolution(index);
@@ -141,37 +152,38 @@ public class OptionsManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    // 볼륨 실제 적용
-    private void ApplyVolume(float value)
+    // AudioMixer 볼륨 적용
+    // AudioMixer는 dB 단위라 슬라이더 0~1을 로그 스케일로 변환
+    // 0 → -80dB (무음), 1 → 0dB (최대)
+    private void ApplyMixerVolume(string paramName, float sliderValue)
     {
-        // AudioListener.volume으로 전체 볼륨 조정
-        // 사운드 에셋 추가 시 AudioMixer로 교체 가능
-        AudioListener.volume = value;
+        if (mainMixer == null) return;
+
+        // 슬라이더 0이면 완전 무음 (-80dB), 아니면 로그 변환
+        float dB = sliderValue > 0.001f
+            ? Mathf.Log10(sliderValue) * 20f
+            : -80f;
+
+        mainMixer.SetFloat(paramName, dB);
     }
 
-    // 밝기 실제 적용 (Global Light2D Intensity 조정)
     private void ApplyBrightness(float value)
     {
         if (globalLight == null) return;
-        // 슬라이더 0~1 값을 minBrightness~maxBrightness 범위로 변환
         globalLight.intensity = Mathf.Lerp(minBrightness, maxBrightness, value);
     }
 
-    // 해상도 실제 적용
     private void ApplyResolution(int index)
     {
         if (index == 0)
         {
-            // 풀스크린
             Screen.SetResolution(Screen.currentResolution.width,
                                  Screen.currentResolution.height, true);
         }
         else
         {
-            // 인덱스 1부터 resolutions 배열 기준 (0번은 Fullscreen이므로 -1)
             int resIndex = index - 1;
             if (resIndex >= resolutions.Length) return;
-
             var res = resolutions[resIndex];
             Screen.SetResolution(res.width, res.height, false);
         }

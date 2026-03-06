@@ -124,7 +124,10 @@ public class GameManager : MonoBehaviour
         float newBPM = GetValueForFloor(bpmTable, floor);
         pulseController.SetBPM(newBPM);
         Debug.Log($"[GameManager] {floor}층 시작 - BPM: {newBPM}");
-
+        
+        // BGM Pitch도 함께 변경 (게임 BPM × 2 = BGM BPM)
+        BGMController.Instance?.SetGameBPM(newBPM * 2f);
+        
         // 4. 층수에 맞는 음파 쿨타임 적용
         float newCooldown = GetValueForFloor(cooldownTable, floor);
         echoEmitter.SetCooldown(newCooldown);
