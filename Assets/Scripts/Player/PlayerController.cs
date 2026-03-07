@@ -8,6 +8,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float moveTime = 0.1f;
     [SerializeField] private float pulseWindow = 0.2f;
 
+    [Header("파문 효과")]
+[SerializeField] private GameObject rippleRingPrefab;   // 파문 링 프리팹
+[SerializeField] private float rippleMaxRadius = 4f;    // 파문 최대 범위
+[SerializeField] private float rippleExpandSpeed = 6f;  // 파문 확장 속도
+
     [Header("참조")]
     [SerializeField] private PulseController pulseController;
     [SerializeField] private CaveGenerator caveGenerator;
@@ -66,10 +71,15 @@ public class PlayerController : MonoBehaviour
         StartCoroutine(MoveToTile(targetPos));
 
         if (!isPulseTime)
-        {
-            onRipple?.Invoke();
-            Debug.Log("[Player] 파문 발생 - 타이밍 미스");
-        }
+{
+    // 파문 이벤트 발행
+    onRipple?.Invoke();
+
+    // 파문 시각 효과 생성
+    SpawnRippleRing();
+
+    Debug.Log("[Player] 파문 발생 - 타이밍 미스");
+}
         else
         {
             Debug.Log("[Player] 조용한 이동 - 타이밍 성공");
@@ -112,4 +122,17 @@ public class PlayerController : MonoBehaviour
     }
 
     public bool IsPulseTime() => isPulseTime;
+
+    // 파문 링 생성
+private void SpawnRippleRing()
+{
+    if (rippleRingPrefab == null) return;
+
+    GameObject ring = Instantiate(rippleRingPrefab,
+        transform.position, Quaternion.identity);
+
+    RippleRing rippleRing = ring.GetComponent<RippleRing>();
+    if (rippleRing != null)
+        rippleRing.Initialize(rippleMaxRadius, rippleExpandSpeed);
+}
 }

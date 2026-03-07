@@ -1,3 +1,4 @@
+// Scripts/Entity/EntityAI.cs
 using UnityEngine;
 using System.Collections;
 
@@ -20,33 +21,59 @@ public class EntityAI : MonoBehaviour
     [SerializeField] private int ambushRange = 2;
     [SerializeField] private int ambushDashRange = 3;
 
+    [Header("추격자 설정")]
+    [SerializeField] private int chaseStepsOnRipple = 5; // 파문 1회당 추격 횟수
+
     private PulseController pulseController;
     private CaveGenerator caveGenerator;
     private Transform playerTransform;
+    private PlayerController playerController;
 
     private bool isMoving = false;
     private Vector2Int reflectorDir = Vector2Int.zero;
     private bool isDashing = false;
 
-    // 충돌 후 일정 시간 동안 재충돌 방지        // 추가
-    private bool isDamageCooldown = false;       // 추가
-    private float damageCooldownTime = 1.0f;     // 추가
+    private bool isDamageCooldown = false;
+    private float damageCooldownTime = 1.0f;
+
+    // Chaser 전용: 남은 추격 횟수
+    // 0이면 대기, 0 초과면 파문 반응 중
+    private int remainingChaseSteps = 0;
 
     void Start()
-{
-    pulseController = FindFirstObjectByType<PulseController>();
-    caveGenerator   = FindFirstObjectByType<CaveGenerator>();
-    playerTransform = GameObject.FindWithTag("Player").transform;
+    {
+        pulseController    = FindFirstObjectByType<PulseController>();
+        caveGenerator      = FindFirstObjectByType<CaveGenerator>();
+        playerTransform    = GameObject.FindWithTag("Player").transform;
+        playerController   = FindFirstObjectByType<PlayerController>();
 
-    // onPulse만 구독 (onBigPulse 제거)
-    pulseController.onPulse.AddListener(OnPulse);
-}
+        pulseController.onPulse.AddListener(OnPulse);
 
-void OnDestroy()
-{
-    if (pulseController != null)
-        pulseController.onPulse.RemoveListener(OnPulse);
-}
+        // Chaser만 파문 이벤트 구독
+        if (entityType == EntityType.Chaser && playerController != null)
+            playerController.onRipple += OnRippleReceived;
+    }
+
+    void OnDestroy()
+    {
+        if (pulseController != null)
+            pulseController.onPulse.RemoveListener(OnPulse);
+
+        // Chaser 파문 이벤트 구독 해제
+        if (entityType == EntityType.Chaser && playerController != null)
+            playerController.onRipple -= OnRippleReceived;
+    }
+
+    // 파문 발생 시 호출 (PlayerController.onRipple 이벤트)
+    private void OnRippleReceived()
+    {
+        if (entityType != EntityType.Chaser) return;
+
+        // 파문 발생 시 추격 횟수 충전
+        // 이미 추격 중이면 횟수 리셋 (새 파문이 더 강하게 반응)
+        remainingChaseSteps = chaseStepsOnRipple;
+        Debug.Log($"[Chaser] 파문 감지! {remainingChaseSteps}번 추격 시작");
+    }
 
     private void OnPulse()
     {
@@ -68,6 +95,7 @@ void OnDestroy()
             Vector2Int.left, Vector2Int.right
         };
 
+        // 방향 셔플
         for (int i = 0; i < directions.Length; i++)
         {
             int rand = Random.Range(i, directions.Length);
@@ -87,10 +115,21 @@ void OnDestroy()
 
     private void MoveChaser()
     {
+        // 남은 추격 횟수가 없으면 대기
+        if (remainingChaseSteps <= 0)
+        {
+            Debug.Log("[Chaser] 대기 중 (파문 없음)");
+            return;
+        }
+
+        // 추격 횟수 1 소모 후 플레이어 방향으로 이동
+        remainingChaseSteps--;
+        Debug.Log($"[Chaser] 추격 중 (남은 횟수: {remainingChaseSteps})");
+
         Vector2Int currentTile = GetCurrentTile();
-        Vector2Int playerTile = GetPlayerTile();
-        Vector2Int dir = GetDirectionToPlayer(currentTile, playerTile);
-        Vector2Int targetTile = currentTile + dir;
+        Vector2Int playerTile  = GetPlayerTile();
+        Vector2Int dir         = GetDirectionToPlayer(currentTile, playerTile);
+        Vector2Int targetTile  = currentTile + dir;
 
         if (!caveGenerator.IsWall(targetTile.x, targetTile.y))
             StartCoroutine(MoveToTile(targetTile));
@@ -99,7 +138,7 @@ void OnDestroy()
     private void MoveAmbusher()
     {
         Vector2Int currentTile = GetCurrentTile();
-        Vector2Int playerTile = GetPlayerTile();
+        Vector2Int playerTile  = GetPlayerTile();
 
         int distance = Mathf.Abs(currentTile.x - playerTile.x) +
                        Mathf.Abs(currentTile.y - playerTile.y);
@@ -113,7 +152,7 @@ void OnDestroy()
         if (reflectorDir == Vector2Int.zero) return;
 
         Vector2Int currentTile = GetCurrentTile();
-        Vector2Int targetTile = currentTile + reflectorDir;
+        Vector2Int targetTile  = currentTile + reflectorDir;
 
         if (!caveGenerator.IsWall(targetTile.x, targetTile.y))
             StartCoroutine(MoveToTile(targetTile));
@@ -138,10 +177,10 @@ void OnDestroy()
     private IEnumerator DashToPlayer(Vector2Int from, Vector2Int to)
     {
         isDashing = true;
-        isMoving = true;
+        isMoving  = true;
 
         Vector2Int currentTile = from;
-        Vector2Int dir = GetDirectionToPlayer(from, to);
+        Vector2Int dir         = GetDirectionToPlayer(from, to);
 
         for (int i = 0; i < ambushDashRange; i++)
         {
@@ -155,16 +194,16 @@ void OnDestroy()
         }
 
         isDashing = false;
-        isMoving = false;
+        isMoving  = false;
     }
 
     private IEnumerator MoveToTile(Vector2Int targetTile)
     {
         isMoving = true;
 
-        Vector3 startPos = transform.position;
-        Vector3 targetPos = caveGenerator.TileToWorld(targetTile);
-        float elapsed = 0f;
+        Vector3 startPos   = transform.position;
+        Vector3 targetPos  = caveGenerator.TileToWorld(targetTile);
+        float elapsed      = 0f;
 
         while (elapsed < moveTime)
         {
@@ -180,28 +219,23 @@ void OnDestroy()
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
-        {
-            // 데미지 쿨타임 중이면 무시            // 추가
-            if (isDamageCooldown) return;          // 추가
+        if (!other.CompareTag("Player")) return;
+        if (isDamageCooldown) return;
 
-            HealthManager healthManager = FindFirstObjectByType<HealthManager>();
-            if (healthManager != null)
-                healthManager.TakeDamage(1);
+        HealthManager healthManager = FindFirstObjectByType<HealthManager>();
+        if (healthManager != null)
+            healthManager.TakeDamage(1);
 
-            Debug.Log($"[Entity] 플레이어 충돌 - 데미지!");
-
-            StartCoroutine(DamageCooldown());      // 추가
-        }
+        Debug.Log($"[Entity] 플레이어 충돌 - 데미지!");
+        StartCoroutine(DamageCooldown());
     }
 
-    // 추가: 충돌 후 잠깐 무적 처리
-    private IEnumerator DamageCooldown()           // 추가
-    {                                              // 추가
-        isDamageCooldown = true;                   // 추가
-        yield return new WaitForSeconds(damageCooldownTime); // 추가
-        isDamageCooldown = false;                  // 추가
-    }                                              // 추가
+    private IEnumerator DamageCooldown()
+    {
+        isDamageCooldown = true;
+        yield return new WaitForSeconds(damageCooldownTime);
+        isDamageCooldown = false;
+    }
 
     private Vector2Int GetCurrentTile()
     {

@@ -92,12 +92,12 @@ public class OptionsManager : MonoBehaviour
     private void LoadSettings()
     {
         // BGM 볼륨 (기본값 0.8)
-        float bgm = PlayerPrefs.GetFloat(KEY_BGM, 0.8f);
+        float bgm = PlayerPrefs.GetFloat(KEY_BGM, 0.5f);
         bgmSlider.value = bgm;
         ApplyMixerVolume("BGMVolume", bgm);
 
         // SFX 볼륨 (기본값 1.0)
-        float sfx = PlayerPrefs.GetFloat(KEY_SFX, 1f);
+        float sfx = PlayerPrefs.GetFloat(KEY_SFX, 0.5f);
         sfxSlider.value = sfx;
         ApplyMixerVolume("SFXVolume", sfx);
 
@@ -107,7 +107,7 @@ public class OptionsManager : MonoBehaviour
         ApplyMixerVolume("PulseVolume", pulse);
 
         // 밝기
-        float brightness = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, 0.5f);
+        float brightness = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, 0f);
         brightnessSlider.value = brightness;
         ApplyBrightness(brightness);
 

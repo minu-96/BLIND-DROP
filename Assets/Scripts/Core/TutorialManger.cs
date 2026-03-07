@@ -157,69 +157,87 @@ private IEnumerator InitAfterGenerate()
         ));
 
         // --- 단계 3: 맥박 타이밍 이동 ---
-        yield return StartCoroutine(ShowDialog(
-            "화면 테두리가 깜빡이는 거 보여?\n저게 동굴의 맥박이야.",
-            waitForConfirm: true
-        ));
+yield return StartCoroutine(ShowDialog(
+    "화면 테두리가 깜빡이는 거 보여?\n저게 동굴의 맥박이야.",
+    waitForConfirm: true
+));
 
-        yield return StartCoroutine(ShowDialog(
-            "맥박 타이밍에 맞춰 이동하면\n소음 없이 조용히 움직일 수 있어.",
-            waitForConfirm: false
-        ));
+yield return StartCoroutine(ShowDialog(
+    "맥박 타이밍에 맞춰 이동하면\n소음 없이 조용히 움직일 수 있어.",
+    waitForConfirm: false
+));
 
-        SetHint("테두리가 빛날 때 이동해보세요 (조용한 이동 성공)");
-        playerController.UnlockInput();
+SetHint("테두리가 빛날 때 이동해보세요");
+playerController.UnlockInput();
 
-        // 타이밍 성공 감지 - onRipple이 발생하지 않고 이동하면 성공
-        Vector3 beforePos = playerTransform.position;
-        timingFail = false;
+// 타이밍 성공할 때까지 반복
+// 이동했는데 파문이 없으면 성공, 파문이 생기면 다시 시도
+while (true)
+{
+    Vector3 beforePos = playerTransform.position;
+    timingFail = false;
 
-        while (true)
-        {
-            // 위치가 바뀌고 파문이 없으면 타이밍 성공
-            if (Vector3.Distance(playerTransform.position, beforePos) > 0.5f && !timingFail)
-            {
-                timingSuccess = true;
-                break;
-            }
-            // 파문이 발생하면 다시 시도
-            if (timingFail)
-            {
-                timingFail = false;
-                beforePos = playerTransform.position;
-            }
-            yield return null;
-        }
+    // 이동할 때까지 대기
+    while (Vector3.Distance(playerTransform.position, beforePos) < 0.5f)
+        yield return null;
 
+    // 이동 후 한 프레임 더 대기
+    // (이동과 파문이 같은 프레임에 처리될 수 있어서 다음 프레임에 확인)
+    yield return null;
+
+    if (!timingFail)
+    {
+        // 파문 없이 이동 성공
+        timingSuccess = true;
+        break;
+    }
+    else
+    {
+        // 파문 발생 → 재시도 안내
         playerController.LockInput();
         SetHint("");
-
         yield return StartCoroutine(ShowDialog(
-            "완벽해! 타이밍을 맞추면 적이 눈치채지 못해.",
-            waitForConfirm: true
-        ));
-
-        // --- 단계 4: 파문 패널티 ---
-        yield return StartCoroutine(ShowDialog(
-            "반대로 타이밍을 놓치면 파문이 생겨.\n파문은 적을 자극해서 너한테 다가오게 해.",
+            "타이밍을 놓쳤어. 테두리가 빛날 때 다시 해봐.",
             waitForConfirm: false
         ));
-
-        SetHint("테두리가 꺼져있을 때 이동해보세요 (파문 발생 확인)");
+        SetHint("테두리가 빛날 때 이동해보세요");
         playerController.UnlockInput();
-        timingFail = false;
+    }
+}
 
-        // 파문 발생할 때까지 대기
-        while (!timingFail)
-            yield return null;
+playerController.LockInput();
+SetHint("");
 
-        playerController.LockInput();
-        SetHint("");
+yield return StartCoroutine(ShowDialog(
+    "완벽해! 타이밍을 맞추면 적이 눈치채지 못해.",
+    waitForConfirm: true
+));
 
-        yield return StartCoroutine(ShowDialog(
-            "저 파문이 퍼지는 게 보여?\n적들은 저 신호를 따라와.",
-            waitForConfirm: true
-        ));
+// --- 단계 4: 파문 패널티 ---
+yield return StartCoroutine(ShowDialog(
+    "반대로 타이밍을 놓치면 파문이 생겨.\n파문은 적을 자극해서 너한테 다가오게 해.",
+    waitForConfirm: false
+));
+
+SetHint("테두리가 꺼져있을 때 이동해보세요 (파문 발생 확인)");
+playerController.UnlockInput();
+timingFail = false;
+
+// 파문 발생할 때까지 대기
+// 타이밍 성공으로 이동해도 파문이 없으면 계속 대기
+while (!timingFail)
+    yield return null;
+
+// 파문 발생 후 한 프레임 대기 (시각 효과 표시 후 진행)
+yield return new WaitForSeconds(0.5f);
+
+playerController.LockInput();
+SetHint("");
+
+yield return StartCoroutine(ShowDialog(
+    "저 파문이 퍼지는 게 보여?\n적들은 저 신호를 따라와.",
+    waitForConfirm: true
+));
 
         // --- 단계 5: 완료 ---
         yield return StartCoroutine(ShowDialog(

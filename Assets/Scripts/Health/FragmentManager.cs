@@ -63,7 +63,7 @@ public class FragmentManager : MonoBehaviour
             Debug.Log("[Fragment] 파편 2개 달성 - 보너스 체력 추가!");
         }
 
-        if (currentPlayFragments == 1)
+        if (currentPlayFragments % 2 == 1)
         {
             healthManager.IsBonusHealth();
             Debug.Log("[Fragment] 보너스 체력 가시화!");

@@ -2338,7 +2338,7 @@ MonoBehaviour:
   closeButton: {fileID: 1377954161}
   globalLight: {fileID: 619394801}
   minBrightness: 0
-  maxBrightness: 1
+  maxBrightness: 0.1
 --- !u!114 &572912662
 MonoBehaviour:
   m_ObjectHideFlags: 0

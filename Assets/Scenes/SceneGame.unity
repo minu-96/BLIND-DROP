@@ -759,6 +759,9 @@ MonoBehaviour:
   tileSize: 1
   moveTime: 0.1
   pulseWindow: 0.3
+  rippleRingPrefab: {fileID: 1256831463717229328, guid: 0e7ed1cc6062943ffa32de95d0b0e0d8, type: 3}
+  rippleMaxRadius: 4
+  rippleExpandSpeed: 6
   pulseController: {fileID: 77724323}
   caveGenerator: {fileID: 539261671}
 --- !u!114 &398978536
@@ -773,7 +776,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03cd66f0b9826426d8462d292dfa7e77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseRadius: 5
+  baseRadius: 3
   expandSpeed: 8
   baseCooldown: 1.5
   perfectMultiplier: 2
@@ -824,7 +827,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2137340a682d14a24b8d032681edfa1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseLightRadius: 5
+  baseLightRadius: 3
   perfectLightRadius: 10
   lightFadeTime: 0.8
   maxLightIntensity: 1
@@ -890,6 +893,7 @@ MonoBehaviour:
   fragmentPrefab: {fileID: 3089629945584760331, guid: 680bee1cd257742e68465bdd190103bd, type: 3}
   baseEnemyCount: 3
   fragmentSpawnChance: 0.25
+  isTutorialMode: 0
 --- !u!1 &554544787
 GameObject:
   m_ObjectHideFlags: 0

@@ -37,12 +37,18 @@ public class HealthDisplay : MonoBehaviour
 
     public void Bonus()
     {
-        bonusHPIcon.color = inactiveColor;
-        isBonus = true;
+        if(isBonus == false)
+        {
+            bonusHPIcon.color = inactiveColor;
+            isBonus = true;
+        }
     }
 
     public void RealBonus()
     {
-        isBonus = false;
+        if(isBonus == true)
+        {
+            isBonus = false;
+        }
     }
 }
