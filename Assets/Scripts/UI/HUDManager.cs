@@ -10,6 +10,9 @@ public class HUDManager : MonoBehaviour
     [Header("주간 동굴 배지")]
     [SerializeField] private GameObject weeklyBadge; // WEEKLY 배지 오브젝트
 
+    // FragmentManager 참조 추가
+private FragmentManager fragmentManager;
+
     private GameManager gameManager;
     private HealthManager healthManager;
     private EchoEmitter echoEmitter;
@@ -27,6 +30,8 @@ public class HUDManager : MonoBehaviour
         // 주간 동굴 모드일 때만 WEEKLY 배지 표시
         if (weeklyBadge != null)
             weeklyBadge.SetActive(gameManager != null && gameManager.isWeeklyCave);
+
+        fragmentManager = FindFirstObjectByType<FragmentManager>();
 
         // 시작 시 현재 상태로 초기화
         RefreshAll();
@@ -53,10 +58,19 @@ public class HUDManager : MonoBehaviour
 
     // 체력 변경 시 HealthManager 이벤트로 자동 호출
     private void OnHealthChanged()
+{
+    if (healthManager == null) return;
+    healthDisplay?.UpdateHealth(healthManager.baseHealth, healthManager.bonusHealth);
+
+    // 체력 변경 시 보너스HP 진행도도 함께 갱신
+    // (보너스HP가 깎였을 때 아이콘 상태 즉시 반영)
+    if (fragmentManager != null)
     {
-        if (healthManager == null) return;
-        healthDisplay?.UpdateHealth(healthManager.baseHealth, healthManager.bonusHealth);
+        int fragmentsInCycle = fragmentManager.GetCurrentPlayFragments() % 2;
+        bool hasBonusHP = healthManager.bonusHealth > 0;
+        healthDisplay?.UpdateBonusProgress(fragmentsInCycle, hasBonusHP);
     }
+}
 
     private void RefreshAll()
     {

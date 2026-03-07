@@ -112,7 +112,7 @@ public class OptionsManager : MonoBehaviour
         ApplyBrightness(brightness);
 
         // 해상도
-        int resIndex = PlayerPrefs.GetInt(KEY_RESOLUTION, 0);
+        int resIndex = PlayerPrefs.GetInt(KEY_RESOLUTION, 4);
         resolutionDropdown.value = resIndex;
         ApplyResolution(resIndex);
     }

@@ -4,7 +4,9 @@ using System.Collections.Generic;
 public class FragmentManager : MonoBehaviour
 {
     [Header("참조")]
-    [SerializeField] private HealthManager healthManager; // 보너스 체력 추가용
+[SerializeField] private HealthManager healthManager;
+[SerializeField] private HealthDisplay healthDisplay;  // 추가
+    
 
     // 현재 플레이 내 수집한 파편 수 (2개마다 보너스 체력 +1)
     private int currentPlayFragments = 0;
@@ -49,35 +51,33 @@ public class FragmentManager : MonoBehaviour
     }
 
     public void CollectFragment()
+{
+    currentPlayFragments++;
+    totalFragments++;
+
+    Debug.Log($"[Fragment] 파편 수집! 현재 플레이: {currentPlayFragments}개, 누적: {totalFragments}개");
+
+    // 2개마다 보너스 체력 추가
+    if (currentPlayFragments % 2 == 0)
     {
-        // 파편 1개 수집
-        currentPlayFragments++;
-        totalFragments++;
-
-        Debug.Log($"[Fragment] 파편 수집! 현재 플레이: {currentPlayFragments}개, 누적: {totalFragments}개");
-
-        // 현재 플레이에서 2개 수집마다 보너스 체력 +1
-        if (currentPlayFragments % 2 == 0)
-        {
-            healthManager.AddBonusHealth();
-            Debug.Log("[Fragment] 파편 2개 달성 - 보너스 체력 추가!");
-        }
-
-        if (currentPlayFragments % 2 == 1)
-        {
-            healthManager.IsBonusHealth();
-            Debug.Log("[Fragment] 보너스 체력 가시화!");
-        }
-
-        // 누적 파편으로 음파 모양 해금 체크
-        CheckEchoUnlock();
-
-        // 누적 파편 수 저장
-        PlayerPrefs.SetInt("TotalFragments", totalFragments);
-        PlayerPrefs.Save();
-
-        onFragmentCollected?.Invoke();
+        healthManager.AddBonusHealth();
+        Debug.Log("[Fragment] 파편 2개 달성 - 보너스 체력 추가!");
     }
+
+    // 파편 진행도 UI 갱신
+    // fragmentsInCycle: 현재 주기 내 수집 수 (0 또는 1)
+    // hasBonusHP: 보너스HP 보유 여부
+    int fragmentsInCycle = currentPlayFragments % 2;
+    bool hasBonusHP = healthManager.bonusHealth > 0;
+    healthDisplay?.UpdateBonusProgress(fragmentsInCycle, hasBonusHP);
+
+    CheckEchoUnlock();
+
+    PlayerPrefs.SetInt("TotalFragments", totalFragments);
+    PlayerPrefs.Save();
+
+    onFragmentCollected?.Invoke();
+}
 
     private void CheckEchoUnlock()
     {

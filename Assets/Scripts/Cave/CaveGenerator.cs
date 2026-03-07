@@ -32,8 +32,14 @@ public class CaveGenerator : MonoBehaviour
     [SerializeField] private int baseEnemyCount = 3;      // 기본 적 수 (1층 기준)
     [SerializeField] private float fragmentSpawnChance = 0.25f; // 파편 생성 확률 25%
     [Header("튜토리얼 설정")]
-[SerializeField] public bool isTutorialMode = false; // 튜토리얼 전용 플래그
+    [SerializeField] public bool isTutorialMode = false; // 튜토리얼 전용 플래그
                                                       // true면 Chaser 1마리만 생성
+
+    // 튜토리얼 전용 적 참조 (TutorialManager에서 직접 접근)
+    public GameObject TutorialWanderer  { get; private set; }
+    public GameObject TutorialChaser    { get; private set; }
+    public GameObject TutorialAmbusher  { get; private set; }
+    public GameObject TutorialReflector { get; private set; }
 
     // 현재 맵 크기 (층수에 따라 변함)
     private int currentWidth;
@@ -319,20 +325,16 @@ public class CaveGenerator : MonoBehaviour
 
     private void SpawnEntities(int floorNumber)
 {
-    // 튜토리얼 모드: Chaser 1마리만 플레이어에서 멀리 배치
+    // CaveGenerator.cs의 isTutorialMode 블록만 교체
     if (isTutorialMode)
     {
-        if (chaserPrefab == null) return;
-
-        Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
-        if (spawnTile == Vector2Int.zero) return;
-
-        GameObject entity = Instantiate(chaserPrefab,
-            TileToWorld(spawnTile), Quaternion.identity);
-        spawnedTiles.Add(entity);
-
-        Debug.Log("[Cave] 튜토리얼 전용 Chaser 배치");
-        return; // 일반 적 배치 스킵
+        // 튜토리얼용 적 4종을 입구에서 멀리 각각 배치
+        // TutorialManager가 단계별로 활성화/비활성화 제어
+        SpawnTutorialEntity(wandererPrefab,  "TutorialWanderer");
+        SpawnTutorialEntity(chaserPrefab,    "TutorialChaser");
+        SpawnTutorialEntity(ambusherPrefab,  "TutorialAmbusher");
+        SpawnTutorialEntity(reflectorPrefab, "TutorialReflector");
+        return;
     }
 
     // 이하 기존 코드 그대로
@@ -452,6 +454,32 @@ public class CaveGenerator : MonoBehaviour
         }
 
         return Vector2Int.zero;
+    }
+
+    private void SpawnTutorialEntity(GameObject prefab, string entityTag)
+    {
+        if (prefab == null) return;
+
+        Vector2Int spawnTile = GetRandomFloorTileFarFromEntrance();
+        if (spawnTile == Vector2Int.zero) return;
+
+        GameObject entity = Instantiate(prefab,
+            TileToWorld(spawnTile), Quaternion.identity);
+        entity.name = entityTag;
+
+        // 비활성화 대신 참조만 저장 → TutorialManager가 직접 제어
+        switch (entityTag)
+        {
+            case "TutorialWanderer":  TutorialWanderer  = entity; break;
+            case "TutorialChaser":    TutorialChaser    = entity; break;
+            case "TutorialAmbusher":  TutorialAmbusher  = entity; break;
+            case "TutorialReflector": TutorialReflector = entity; break;
+        }
+
+        // 생성 직후 비활성화 (Find 대신 참조로 관리하므로 안전)
+        entity.SetActive(false);
+
+        spawnedTiles.Add(entity);
     }
 
 }

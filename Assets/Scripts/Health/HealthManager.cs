@@ -94,12 +94,8 @@ public class HealthManager : MonoBehaviour
         {
             Debug.Log("[Health] 보너스 체력 이미 최대");
         }
-        healthDisplay?.RealBonus();
     }
-    public void IsBonusHealth()
-    {
-        healthDisplay?.Bonus();
-    }
+    
 
     // 현재 체력 상태 확인용 (UI에서 사용)
     public bool HasBonusHealth() => bonusHealth > 0;
