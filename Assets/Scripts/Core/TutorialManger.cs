@@ -241,12 +241,18 @@ private GameObject tutorialReflector;
         if (tutorialWanderer != null) tutorialWanderer.SetActive(true);
 
         yield return ShowDialog("이제 적들을 소개해줄게.\n음파를 발사해서 찾아봐.", true);
+        playerController.UnlockInput();
+        
         yield return ShowDialog("저건 배회자야.\n맥박마다 랜덤한 방향으로 움직여.\n예측하기 어려우니 조심해.", true);
+
+        
 
         if (tutorialWanderer != null) tutorialWanderer.SetActive(false);
 
         // --- 단계 8: Ambusher 소개 ---
         if (tutorialAmbusher != null) tutorialAmbusher.SetActive(true);
+
+        
 
         yield return ShowDialog("저건 매복자야.\n평소엔 가만히 있다가\n네가 가까이 가면 갑자기 돌진해!", true);
         yield return ShowDialog("음파로 위치를 파악하고\n절대 가까이 가지 마.", true);
@@ -258,6 +264,7 @@ private GameObject tutorialReflector;
 
         yield return ShowDialog("저건 반사체야.\n음파가 닿으면 반대 방향으로 이동 시작해.\n음파를 함부로 쏘면 안 돼!", true);
         yield return ShowDialog("음파로 위치만 파악하고\n이동 방향을 예측해서 피해야 해.", true);
+        playerController.LockInput();
 
         if (tutorialAmbusher != null) tutorialReflector.SetActive(false);
 
@@ -287,7 +294,7 @@ private GameObject tutorialReflector;
         for (int i = 0; i < 2; i++)
         {
             // 입구 근처 바닥 타일 찾기 (플레이어가 쉽게 찾을 수 있도록)
-            Vector2Int tile = GetFloorTileNearEntrance(i * 3 + 2);
+            Vector2Int tile = GetFloorTileNearEntrance(i * 2);
             if (tile == Vector2Int.zero) continue;
 
             Vector3 pos = caveGenerator.TileToWorld(tile);

@@ -107,7 +107,7 @@ public class OptionsManager : MonoBehaviour
         ApplyMixerVolume("PulseVolume", pulse);
 
         // 밝기
-        float brightness = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, 0f);
+        float brightness = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, 0.1f);
         brightnessSlider.value = brightness;
         ApplyBrightness(brightness);
 

@@ -161,19 +161,22 @@ public class EntityAI : MonoBehaviour
     }
 
     public void OnHitByEcho(Vector2 echoOrigin)
-    {
-        if (entityType != EntityType.Reflector) return;
+{
+    if (entityType != EntityType.Reflector) return;
 
-        Vector2 toEntity = (Vector2)transform.position - echoOrigin;
+    // 수정 전: 적 → 음파 원점 반대 방향 (플레이어에서 멀어짐)
+    // Vector2 toEntity = (Vector2)transform.position - echoOrigin;
 
-        if (Mathf.Abs(toEntity.x) >= Mathf.Abs(toEntity.y))
-            reflectorDir = toEntity.x > 0 ? Vector2Int.right : Vector2Int.left;
-        else
-            reflectorDir = toEntity.y > 0 ? Vector2Int.up : Vector2Int.down;
+    // 수정 후: 음파 원점 → 적 반대 방향 (플레이어 쪽으로 이동)
+    Vector2 toEntity = echoOrigin - (Vector2)transform.position;
 
-        Debug.Log($"[Reflector] 음파 피격 - 이동 방향: {reflectorDir}");
-    }
+    if (Mathf.Abs(toEntity.x) >= Mathf.Abs(toEntity.y))
+        reflectorDir = toEntity.x > 0 ? Vector2Int.right : Vector2Int.left;
+    else
+        reflectorDir = toEntity.y > 0 ? Vector2Int.up : Vector2Int.down;
 
+    Debug.Log($"[Reflector] 음파 피격 - 이동 방향: {reflectorDir}");
+}
     private IEnumerator DashToPlayer(Vector2Int from, Vector2Int to)
     {
         isDashing = true;

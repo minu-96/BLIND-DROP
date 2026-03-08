@@ -1,8 +1,4 @@
 // Scripts/Player/EchoRing.cs
-// 음파 링 시각 효과
-// - 퍼지면서 알파가 서서히 줄어들고 최대 범위 도달 시 사라짐
-// - 퍼펙트 에코 시 더 밝고 선명하게 표현
-
 using UnityEngine;
 using System.Collections;
 
@@ -10,13 +6,15 @@ public class EchoRing : MonoBehaviour
 {
     private SpriteRenderer spriteRenderer;
 
+    // 이미 감지한 적 목록 (같은 적을 여러 번 감지 방지)
+    private System.Collections.Generic.HashSet<GameObject> hitEntities
+        = new System.Collections.Generic.HashSet<GameObject>();
+
     void Awake()
     {
-        // SpriteRenderer 캐싱 (매 프레임 GetComponent 호출 방지)
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
-    // EchoEmitter에서 Instantiate 후 바로 호출
     public void Initialize(float maxRadius, float expandSpeed, bool isPerfect)
     {
         StartCoroutine(ExpandRing(maxRadius, expandSpeed, isPerfect));
@@ -25,24 +23,19 @@ public class EchoRing : MonoBehaviour
     private IEnumerator ExpandRing(float maxRadius, float expandSpeed, bool isPerfect)
     {
         float currentRadius = 0f;
-
-        // 퍼펙트 에코면 시작 알파를 더 강하게
         float startAlpha = isPerfect ? 1f : 0.7f;
 
         while (currentRadius < maxRadius)
         {
             currentRadius += expandSpeed * Time.deltaTime;
-            currentRadius = Mathf.Min(currentRadius, maxRadius); // 최대값 초과 방지
+            currentRadius = Mathf.Min(currentRadius, maxRadius);
 
-            // 링 크기 적용 (지름 = 반지름 * 2)
             float scale = currentRadius * 2f;
             transform.localScale = new Vector3(scale, scale, 1f);
 
-            // 확장 진행도에 따라 알파 감소 (퍼질수록 흐려짐)
-            float progress = currentRadius / maxRadius; // 0 → 1
+            float progress = currentRadius / maxRadius;
             float alpha = Mathf.Lerp(startAlpha, 0f, progress);
 
-            // SpriteRenderer에 알파 적용
             if (spriteRenderer != null)
             {
                 Color c = spriteRenderer.color;
@@ -50,10 +43,35 @@ public class EchoRing : MonoBehaviour
                 spriteRenderer.color = c;
             }
 
+            // 매 프레임 현재 반지름 범위 안의 적 감지
+            DetectEntities(currentRadius);
+
             yield return null;
         }
 
-        // 최대 범위 도달 → 즉시 삭제
         Destroy(gameObject);
+    }
+
+    // 현재 링 반지름 범위 안의 EntityAI 감지 후 OnHitByEcho 호출
+    private void DetectEntities(float radius)
+    {
+        // Physics2D.OverlapCircle로 현재 링 위치 기준 원형 범위 안 콜라이더 감지
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius);
+
+        foreach (var hit in hits)
+        {
+            // 이미 감지한 오브젝트는 스킵
+            if (hitEntities.Contains(hit.gameObject)) continue;
+
+            EntityAI entity = hit.GetComponent<EntityAI>();
+            if (entity == null) continue;
+
+            // 감지 목록에 추가 (중복 호출 방지)
+            hitEntities.Add(hit.gameObject);
+
+            // EntityAI에 음파 피격 알림
+            entity.OnHitByEcho(transform.position);
+            Debug.Log($"[EchoRing] 적 감지: {hit.gameObject.name}");
+        }
     }
 }
